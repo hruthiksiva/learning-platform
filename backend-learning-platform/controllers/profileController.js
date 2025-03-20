@@ -30,11 +30,13 @@ exports.getProfile = async (req, res) => {
     let profile;
     if (req.user.role === 'teacher') {
       profile = await TeacherProfile.findOne({ user: req.user.id })
-        .populate('user', 'firstName lastName email')
+        .populate('user', 'firstName lastName email profilePicture')
         .populate('webinarsPosted', 'title startTime');
     } else if (req.user.role === 'student') {
       profile = await StudentProfile.findOne({ user: req.user.id })
-        .populate('user', 'firstName lastName email');
+        .populate('user', 'firstName lastName email profilePicture')
+        .populate('jobsPosted', 'title description')
+        .populate('webinarsApplied', 'title startTime status');
     }
     if (!profile) return res.status(404).json({ message: 'Profile not found' });
     res.json(profile);
@@ -74,12 +76,26 @@ exports.getPublicTeacherProfile = async (req, res) => {
   const { teacherId } = req.params;
   try {
     const profile = await TeacherProfile.findOne({ user: teacherId })
-      .populate('user', 'firstName lastName email')
+      .populate('user', 'firstName lastName email profilePicture')
       .populate('webinarsPosted', 'title startTime endTime');
     if (!profile) return res.status(404).json({ message: 'Teacher profile not found' });
     res.json(profile);
   } catch (error) {
     logger.error(`Get public teacher profile error: ${error.message}`);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getPublicStudentProfile = async (req, res) => {
+  const { studentId } = req.params;
+  try {
+    const profile = await StudentProfile.findOne({ user: studentId })
+      .populate('user', 'firstName lastName email profilePicture')
+      .populate('jobsPosted', 'title description');
+    if (!profile) return res.status(404).json({ message: 'Student profile not found' });
+    res.json(profile);
+  } catch (error) {
+    logger.error(`Get public student profile error: ${error.message}`);
     res.status(500).json({ message: 'Server error' });
   }
 };
